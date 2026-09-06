@@ -5,6 +5,8 @@ const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth.routes");
 const eventRoutes = require("./routes/event.routes");
+const photoRoutes = require("./routes/photo.routes");
+const galleryRoutes = require("./routes/gallery.routes");
 
 const errorHandler = require("./middleware/error.middleware");
 
@@ -32,6 +34,8 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/events", photoRoutes);
+app.use("/api", galleryRoutes);
 
 app.use(errorHandler);
 
