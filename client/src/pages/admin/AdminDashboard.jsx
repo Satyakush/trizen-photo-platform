@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 import {
   getEvents,
@@ -9,6 +10,7 @@ import {
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -342,14 +344,18 @@ function AdminDashboard() {
               </p>
             </div>
 
-            <button
-              onClick={() =>
-                setShowCreateModal(true)
-              }
-              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 hover:shadow-md"
-            >
-              + Create Event
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  logout();
+                  navigate("/login");
+                }}
+                className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+              >
+                Logout
+              </button>
+
+            </div>
           </div>
         </div>
       </div>
