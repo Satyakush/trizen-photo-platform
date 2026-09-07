@@ -1,629 +1,776 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-
-import AdminLayout from "../../components/layout/AdminLayout";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { getEvent } from "../../services/event.service";
-import { getEventPhotos } from "../../services/photo.service";
 
 import {
-  createGallery,
-  publishGallery,
-  updateGallery,
-} from "../../services/gallery.service";
+  getMyPhotos,
+  uploadPhotos,
+} from "../../services/photo.service";
 
-const EventDetail = () => {
+const MAX_FILES = 20;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+
+function TeamEventDetail() {
   const { eventId } = useParams();
+  const navigate = useNavigate();
 
   const [event, setEvent] = useState(null);
   const [photos, setPhotos] = useState([]);
 
-  const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
-  const [gallery, setGallery] = useState(null);
-  const [pin, setPin] = useState("");
+  const [activeTab, setActiveTab] = useState("photos");
 
-  const [loading, setLoading] = useState(true);
-  const [galleryLoading, setGalleryLoading] = useState(false);
-  const [publishing, setPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [galleryError, setGalleryError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  const loadData = async () => {
+  useEffect(() => {
+    loadEventData();
+  }, [eventId]);
+
+  const loadEventData = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       setError("");
 
       const [eventResponse, photoResponse] =
         await Promise.all([
           getEvent(eventId),
-          getEventPhotos(eventId),
+          getMyPhotos(eventId),
         ]);
 
-      setEvent(eventResponse.event);
-
-      // Backend returns { success: true, data: [...] }
-      setPhotos(
-        photoResponse.data ||
-          photoResponse.photos ||
-          []
+      setEvent(
+        eventResponse.data ||
+          eventResponse.event ||
+          null
       );
-    } catch (error) {
+
+      setPhotos(photoResponse || []);
+    } catch (err) {
+      console.error(
+        "Failed to load event:",
+        err
+      );
+
       setError(
-        error.response?.data?.message ||
-          "Failed to load event"
+        err.response?.data?.message ||
+          "Failed to load event."
       );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [eventId]);
+  // --------------------------------
+  // FILE SELECTION
+  // --------------------------------
 
-  const togglePhoto = (photoId) => {
-    setSelectedPhotos((current) => {
-      if (current.includes(photoId)) {
-        return current.filter((id) => id !== photoId);
+  const handleFileChange = (event) => {
+    setError("");
+    setMessage("");
+
+    const files = Array.from(
+      event.target.files || []
+    );
+
+    if (!files.length) {
+      return;
+    }
+
+    if (files.length > MAX_FILES) {
+      setError(
+        `You can upload a maximum of ${MAX_FILES} photos at once.`
+      );
+      return;
+    }
+
+    const invalidType = files.find(
+      (file) =>
+        !ALLOWED_TYPES.includes(file.type)
+    );
+
+    if (invalidType) {
+      setError(
+        "Only JPEG, PNG, and WEBP images are allowed."
+      );
+      return;
+    }
+
+    const oversizedFile = files.find(
+      (file) => file.size > MAX_FILE_SIZE
+    );
+
+    if (oversizedFile) {
+      setError(
+        `"${oversizedFile.name}" is larger than 10 MB.`
+      );
+      return;
+    }
+
+    setSelectedFiles(files);
+  };
+
+  const removeSelectedFile = (index) => {
+    setSelectedFiles((current) =>
+      current.filter((_, i) => i !== index)
+    );
+  };
+
+  const clearSelectedFiles = () => {
+    setSelectedFiles([]);
+  };
+
+  // --------------------------------
+  // UPLOAD
+  // --------------------------------
+
+  const handleUpload = async () => {
+    if (!selectedFiles.length) {
+      setError(
+        "Please select at least one photo."
+      );
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setError("");
+      setMessage("");
+
+      const response = await uploadPhotos(
+        eventId,
+        selectedFiles
+      );
+
+      setMessage(
+        response.message ||
+          `${selectedFiles.length} photo(s) uploaded successfully.`
+      );
+
+      setSelectedFiles([]);
+
+      await loadEventData();
+    } catch (err) {
+      console.error(
+        "Photo upload failed:",
+        err
+      );
+
+      setError(
+        err.response?.data?.message ||
+          "Photo upload failed."
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // --------------------------------
+  // HELPERS
+  // --------------------------------
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "0 B";
+
+    const units = [
+      "B",
+      "KB",
+      "MB",
+      "GB",
+    ];
+
+    const index = Math.min(
+      Math.floor(
+        Math.log(bytes) / Math.log(1024)
+      ),
+      units.length - 1
+    );
+
+    return `${(
+      bytes /
+      Math.pow(1024, index)
+    ).toFixed(1)} ${units[index]}`;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "";
+
+    return new Date(date).toLocaleDateString(
+      "en-IN",
+      {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
       }
-
-      return [...current, photoId];
-    });
+    );
   };
 
-  const selectAll = () => {
-    setSelectedPhotos(photos.map((photo) => photo._id));
-  };
-
-  const clearSelection = () => {
-    setSelectedPhotos([]);
-  };
-
-  const handleCreateGallery = async () => {
-    if (selectedPhotos.length === 0) {
-      setGalleryError(
-        "Select at least one photo before creating the gallery."
-      );
-      return;
-    }
-
-    if (!/^\d{4,6}$/.test(pin)) {
-      setGalleryError(
-        "PIN must contain 4 to 6 digits."
-      );
-      return;
-    }
-
-    try {
-      setGalleryLoading(true);
-      setGalleryError("");
-      setSuccess("");
-
-      const response = await createGallery(eventId, {
-        photoIds: selectedPhotos,
-        pin,
-      });
-
-      setGallery(response.gallery || response.data);
-
-      setSuccess("Gallery created successfully.");
-    } catch (error) {
-      setGalleryError(
-        error.response?.data?.message ||
-          "Failed to create gallery"
-      );
-    } finally {
-      setGalleryLoading(false);
-    }
-  };
-
-  const handleUpdateGallery = async () => {
-    if (!gallery) return;
-
-    if (selectedPhotos.length === 0) {
-      setGalleryError(
-        "Select at least one photo for the gallery."
-      );
-      return;
-    }
-
-    try {
-      setGalleryLoading(true);
-      setGalleryError("");
-      setSuccess("");
-
-      const response = await updateGallery(
-        gallery._id,
-        {
-          photoIds: selectedPhotos,
-          ...(pin
-            ? {
-                pin,
-              }
-            : {}),
-        }
-      );
-
-      setGallery(response.gallery || response.data);
-
-      setSuccess("Gallery updated successfully.");
-    } catch (error) {
-      setGalleryError(
-        error.response?.data?.message ||
-          "Failed to update gallery"
-      );
-    } finally {
-      setGalleryLoading(false);
-    }
-  };
-
-  const handlePublishGallery = async () => {
-    if (!gallery) return;
-
-    try {
-      setPublishing(true);
-      setGalleryError("");
-      setSuccess("");
-
-      const response = await publishGallery(
-        gallery._id
-      );
-
-      const publishedGallery =
-        response.gallery || response.data;
-
-      setGallery(
-        publishedGallery || {
-          ...gallery,
-          isPublished: true,
-          publishedAt: new Date().toISOString(),
-        }
-      );
-
-      setSuccess("Gallery published successfully.");
-    } catch (error) {
-      setGalleryError(
-        error.response?.data?.message ||
-          "Failed to publish gallery"
-      );
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  const copyGalleryLink = async () => {
-    if (!gallery?.slug) return;
-
-    const url = `${window.location.origin}/gallery/${gallery.slug}`;
-
-    try {
-      await navigator.clipboard.writeText(url);
-      setSuccess("Gallery link copied.");
-    } catch {
-      setSuccess(url);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <AdminLayout>
-        <p className="text-gray-500">
-          Loading event...
-        </p>
-      </AdminLayout>
+      <div className="flex min-h-[70vh] items-center justify-center bg-slate-50">
+        <div className="text-center">
+
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+
+          <p className="text-sm text-slate-500">
+            Loading your workspace...
+          </p>
+
+        </div>
+      </div>
     );
   }
 
-  if (error && !event) {
+  if (!event) {
     return (
-      <AdminLayout>
-        <Link
-          to="/admin"
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ← Back to Dashboard
-        </Link>
+      <div className="min-h-screen bg-slate-50 p-6">
 
-        <div className="mt-6 rounded-lg bg-red-50 p-4 text-red-600">
-          {error}
+        <div className="mx-auto max-w-4xl rounded-2xl border border-red-200 bg-white p-8 text-center">
+
+          <p className="font-semibold text-red-600">
+            Event not found.
+          </p>
+
+          <button
+            onClick={() =>
+              navigate("/team")
+            }
+            className="mt-4 text-sm font-semibold text-slate-700 underline"
+          >
+            Back to My Events
+          </button>
+
         </div>
-      </AdminLayout>
+
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div>
-        {/* Back */}
-        <div className="mb-6">
-          <Link
-            to="/admin"
-            className="text-sm text-blue-600 hover:underline"
+    <div className="min-h-screen bg-slate-50">
+
+      {/* =================================
+          HEADER
+      ================================= */}
+
+      <div className="border-b border-slate-200 bg-white">
+
+        <div className="mx-auto max-w-7xl px-6 py-6">
+
+          <button
+            onClick={() =>
+              navigate("/team")
+            }
+            className="mb-5 text-sm font-medium text-slate-500 transition hover:text-slate-900"
           >
-            ← Back to Dashboard
-          </Link>
-        </div>
+            ← Back to My Events
+          </button>
 
-        {error && (
-          <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-600">
-            {error}
-          </div>
-        )}
+          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
-        {success && (
-          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-green-700">
-            {success}
-          </div>
-        )}
-
-        {/* Event Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {event.name}
-          </h1>
-
-          {event.description && (
-            <p className="mt-2 text-gray-600">
-              {event.description}
-            </p>
-          )}
-
-          <p className="mt-2 text-sm text-gray-500">
-            Event Date:{" "}
-            {new Date(
-              event.eventDate
-            ).toLocaleDateString()}
-          </p>
-        </div>
-
-        {/* Team Members */}
-        <section className="mb-8 rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Team Members
-          </h2>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Members assigned to this event.
-          </p>
-
-          <div className="mt-5">
-            {event.teamMembers?.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                No team members assigned.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {event.teamMembers.map((member) => (
-                  <div
-                    key={member._id}
-                    className="flex items-center justify-between rounded-lg border p-4"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {member.name}
-                      </p>
-
-                      <p className="text-sm text-gray-500">
-                        {member.email}
-                      </p>
-                    </div>
-
-                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs">
-                      Assigned
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Photo Review */}
-        <section className="mb-8 rounded-xl border bg-white p-6 shadow-sm">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Review Photos
-              </h2>
 
-              <p className="mt-1 text-sm text-gray-500">
-                Select the photos you want to publish in
-                the customer gallery.
-              </p>
+              <div className="mb-3">
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                  ASSIGNED EVENT
+                </span>
+              </div>
+
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+                {event.name}
+              </h1>
+
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+
+                {event.eventDate && (
+                  <span>
+                    📅 {formatDate(
+                      event.eventDate
+                    )}
+                  </span>
+                )}
+
+                <span>
+                  📷 {photos.length} uploaded
+                </span>
+
+              </div>
+
             </div>
+
+            {/* STATS */}
 
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={selectAll}
-                disabled={photos.length === 0}
-                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-              >
-                Select All
-              </button>
 
-              <button
-                type="button"
-                onClick={clearSelection}
-                disabled={selectedPhotos.length === 0}
-                className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-              >
-                Clear
-              </button>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-center">
+
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  My Photos
+                </p>
+
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  {photos.length}
+                </p>
+
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-center">
+
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  Status
+                </p>
+
+                <p className="mt-1 text-sm font-bold text-emerald-600">
+                  Assigned
+                </p>
+
+              </div>
+
             </div>
+
           </div>
 
-          <div className="mb-5 rounded-lg bg-gray-50 px-4 py-3">
-            <span className="text-sm font-medium text-gray-900">
-              {selectedPhotos.length}
-            </span>{" "}
-            <span className="text-sm text-gray-500">
-              of {photos.length} photos selected
+        </div>
+
+      </div>
+
+      {/* =================================
+          CONTENT
+      ================================= */}
+
+      <main className="mx-auto max-w-7xl px-6 py-6">
+
+        {/* ALERTS */}
+
+        {message && (
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+
+            <span>
+              ✓ {message}
             </span>
+
+            <button
+              onClick={() =>
+                setMessage("")
+              }
+              className="text-emerald-500 hover:text-emerald-800"
+            >
+              ×
+            </button>
+
           </div>
+        )}
 
-          {photos.length === 0 ? (
-            <div className="rounded-lg bg-gray-50 p-10 text-center text-gray-500">
-              No photos have been uploaded to this event
-              yet.
+        {error && (
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+
+            <span>{error}</span>
+
+            <button
+              onClick={() =>
+                setError("")
+              }
+              className="text-red-500 hover:text-red-800"
+            >
+              ×
+            </button>
+
+          </div>
+        )}
+
+        {/* =================================
+            TABS
+        ================================= */}
+
+        <div className="mb-6 flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+
+          <button
+            onClick={() =>
+              setActiveTab("overview")
+            }
+            className={`flex-1 rounded-lg px-5 py-3 text-sm font-semibold transition ${
+              activeTab === "overview"
+                ? "bg-slate-900 text-white"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            Overview
+          </button>
+
+          <button
+            onClick={() =>
+              setActiveTab("photos")
+            }
+            className={`flex-1 rounded-lg px-5 py-3 text-sm font-semibold transition ${
+              activeTab === "photos"
+                ? "bg-slate-900 text-white"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            My Photos
+            <span
+              className={`ml-2 rounded-full px-2 py-0.5 text-xs ${
+                activeTab === "photos"
+                  ? "bg-white/15 text-white"
+                  : "bg-slate-100 text-slate-500"
+              }`}
+            >
+              {photos.length}
+            </span>
+          </button>
+
+        </div>
+
+        {/* =================================
+            OVERVIEW
+        ================================= */}
+
+        {activeTab === "overview" && (
+          <div className="grid gap-6 lg:grid-cols-3">
+
+            {/* EVENT */}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                Event
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold text-slate-900">
+                {event.name}
+              </h2>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+
+                <div className="rounded-xl bg-slate-50 p-5">
+
+                  <p className="text-xs font-medium text-slate-400">
+                    Event Date
+                  </p>
+
+                  <p className="mt-2 font-semibold text-slate-900">
+                    {formatDate(
+                      event.eventDate
+                    ) || "Not specified"}
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-5">
+
+                  <p className="text-xs font-medium text-slate-400">
+                    Your Uploads
+                  </p>
+
+                  <p className="mt-2 font-semibold text-slate-900">
+                    {photos.length} photos
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-5 sm:col-span-2">
+
+                  <p className="text-xs font-medium text-slate-400">
+                    Description
+                  </p>
+
+                  <p className="mt-2 leading-6 text-slate-700">
+                    {event.description ||
+                      "No description provided for this event."}
+                  </p>
+
+                </div>
+
+              </div>
+
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {photos.map((photo) => {
-                const isSelected =
-                  selectedPhotos.includes(photo._id);
 
-                return (
-                  <button
-                    type="button"
-                    key={photo._id}
-                    onClick={() =>
-                      togglePhoto(photo._id)
+            {/* QUICK ACTION */}
+
+            <div className="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-2xl">
+                📷
+              </div>
+
+              <h3 className="mt-5 text-xl font-bold">
+                Ready to upload?
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Add your event photos here. Your uploads will be available to the event admin for review.
+              </p>
+
+              <button
+                onClick={() =>
+                  setActiveTab("photos")
+                }
+                className="mt-6 w-full rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100"
+              >
+                Manage My Photos →
+              </button>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* =================================
+            PHOTOS
+        ================================= */}
+
+        {activeTab === "photos" && (
+          <div>
+
+            {/* HEADER */}
+
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+              <div>
+
+                <h2 className="text-2xl font-bold text-slate-900">
+                  My Photos
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Photos you have uploaded to this event.
+                </p>
+
+              </div>
+
+              <label className="cursor-pointer rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+
+                + Upload Photos
+
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+              </label>
+
+            </div>
+
+            {/* UPLOAD QUEUE */}
+
+            {selectedFiles.length > 0 && (
+              <div className="mb-6 overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+
+                <div className="border-b border-blue-100 bg-blue-50 px-5 py-4">
+
+                  <div className="flex items-center justify-between">
+
+                    <div>
+
+                      <p className="font-semibold text-blue-900">
+                        Ready to upload
+                      </p>
+
+                      <p className="mt-1 text-sm text-blue-700">
+                        {selectedFiles.length} photo
+                        {selectedFiles.length >
+                        1
+                          ? "s"
+                          : ""}{" "}
+                        selected
+                      </p>
+
+                    </div>
+
+                    <button
+                      onClick={
+                        clearSelectedFiles
+                      }
+                      className="text-sm font-semibold text-blue-700 hover:text-blue-900"
+                    >
+                      Cancel
+                    </button>
+
+                  </div>
+
+                </div>
+
+                <div className="p-5">
+
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+
+                    {selectedFiles.map(
+                      (file, index) => (
+                        <div
+                          key={`${file.name}-${index}`}
+                          className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3"
+                        >
+
+                          {/* PREVIEW */}
+
+                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-200">
+
+                            <img
+                              src={URL.createObjectURL(
+                                file
+                              )}
+                              alt={
+                                file.name
+                              }
+                              className="h-full w-full object-cover"
+                            />
+
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+
+                            <p className="truncate text-sm font-medium text-slate-800">
+                              {file.name}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-400">
+                              {formatFileSize(
+                                file.size
+                              )}
+                            </p>
+
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              removeSelectedFile(
+                                index
+                              )
+                            }
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                          >
+                            ×
+                          </button>
+
+                        </div>
+                      )
+                    )}
+
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+                    <p className="text-xs text-slate-400">
+                      JPEG, PNG or WEBP · Max 10 MB each · Max 20 photos
+                    </p>
+
+                    <button
+                      onClick={
+                        handleUpload
+                      }
+                      disabled={
+                        isUploading
+                      }
+                      className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isUploading
+                        ? "Uploading..."
+                        : `Upload ${selectedFiles.length} Photo${
+                            selectedFiles.length >
+                            1
+                              ? "s"
+                              : ""
+                          }`}
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+            {/* PHOTO GRID */}
+
+            {photos.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-20 text-center">
+
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl">
+                  📷
+                </div>
+
+                <h3 className="mt-5 text-lg font-bold text-slate-900">
+                  No photos uploaded yet
+                </h3>
+
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                  Upload your event photos here. They will be available to the admin for review.
+                </p>
+
+                <label className="mt-6 inline-block cursor-pointer rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+
+                  Upload First Photos
+
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={
+                      handleFileChange
                     }
-                    className={`group relative overflow-hidden rounded-xl border-2 text-left transition ${
-                      isSelected
-                        ? "border-gray-900"
-                        : "border-transparent"
-                    }`}
+                    className="hidden"
+                  />
+
+                </label>
+
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+
+                {photos.map((photo) => (
+                  <div
+                    key={photo._id}
+                    className="group relative aspect-square overflow-hidden rounded-2xl bg-slate-100 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg"
                   >
+
                     <img
                       src={photo.storageUrl}
                       alt={photo.filename}
-                      className="h-52 w-full object-cover transition group-hover:scale-105"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
 
-                    {/* Selection overlay */}
-                    <div
-                      className={`absolute inset-0 transition ${
-                        isSelected
-                          ? "bg-black/20"
-                          : "bg-transparent group-hover:bg-black/10"
-                      }`}
-                    />
+                    {/* HOVER INFO */}
 
-                    {/* Checkbox */}
-                    <div className="absolute left-3 top-3">
-                      <div
-                        className={`flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white ${
-                          isSelected
-                            ? "border-gray-900 bg-gray-900 text-white"
-                            : "border-white"
-                        }`}
-                      >
-                        {isSelected && "✓"}
-                      </div>
-                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3 pt-12 opacity-0 transition group-hover:opacity-100">
 
-                    {/* Filename */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-3">
-                      <p className="truncate text-xs text-white">
+                      <p className="truncate text-xs font-medium text-white">
                         {photo.filename}
                       </p>
+
+                      <p className="mt-1 text-[10px] text-white/70">
+                        {formatFileSize(
+                          photo.fileSize
+                        )}
+                      </p>
+
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </section>
 
-        {/* Gallery Management */}
-        <section className="rounded-xl border bg-white p-6 shadow-sm">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {gallery
-                ? "Gallery Management"
-                : "Create Customer Gallery"}
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-500">
-              {gallery
-                ? gallery.isPublished
-                  ? "This gallery has been published."
-                  : "Review the gallery before publishing it."
-                : "Create a PIN-protected gallery from your selected photos."}
-            </p>
-          </div>
-
-          {galleryError && (
-            <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-              {galleryError}
-            </div>
-          )}
-
-          {/* PIN */}
-          {!gallery && (
-            <div className="mb-6 max-w-sm">
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Gallery PIN
-              </label>
-
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={pin}
-                onChange={(e) =>
-                  setPin(
-                    e.target.value.replace(/\D/g, "")
-                  )
-                }
-                placeholder="Enter 4-6 digit PIN"
-                className="w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-gray-300"
-              />
-
-              <p className="mt-1 text-xs text-gray-500">
-                Customers will need this PIN to access the
-                gallery.
-              </p>
-            </div>
-          )}
-
-          {gallery && (
-            <div className="space-y-5">
-              {/* Gallery Status */}
-              <div className="rounded-xl bg-gray-50 p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Status
-                    </p>
-
-                    <p className="mt-1 font-semibold text-gray-900">
-                      {gallery.isPublished
-                        ? "Published"
-                        : "Unpublished"}
-                    </p>
                   </div>
+                ))}
 
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      gallery.isPublished
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {gallery.isPublished
-                      ? "Live"
-                      : "Draft"}
-                  </span>
-                </div>
               </div>
+            )}
 
-              {/* Gallery Link */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Gallery Link
-                </label>
+          </div>
+        )}
 
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    readOnly
-                    value={`${window.location.origin}/gallery/${gallery.slug}`}
-                    className="flex-1 rounded-lg border bg-gray-50 px-4 py-3 text-sm"
-                  />
+      </main>
 
-                  <button
-                    type="button"
-                    onClick={copyGalleryLink}
-                    className="rounded-lg border px-4 py-3 text-sm font-medium hover:bg-gray-50"
-                  >
-                    Copy Link
-                  </button>
-                </div>
-              </div>
-
-              {/* PIN */}
-              <div className="max-w-sm">
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Gallery PIN
-                </label>
-
-                <input
-                  type="password"
-                  value={pin}
-                  onChange={(e) =>
-                    setPin(
-                      e.target.value.replace(/\D/g, "")
-                    )
-                  }
-                  maxLength={6}
-                  inputMode="numeric"
-                  placeholder="Enter new PIN"
-                  disabled={gallery.isPublished}
-                  className="w-full rounded-lg border px-4 py-3 outline-none focus:ring-2 focus:ring-gray-300 disabled:bg-gray-100"
-                />
-
-                <p className="mt-1 text-xs text-gray-500">
-                  PIN changes are available while the gallery
-                  is unpublished.
-                </p>
-              </div>
-
-              {/* Actions */}
-              {!gallery.isPublished && (
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={handleUpdateGallery}
-                    disabled={
-                      galleryLoading ||
-                      selectedPhotos.length === 0
-                    }
-                    className="rounded-lg border px-5 py-3 font-medium hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    {galleryLoading
-                      ? "Saving..."
-                      : "Save Changes"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handlePublishGallery}
-                    disabled={
-                      publishing ||
-                      selectedPhotos.length === 0
-                    }
-                    className="rounded-lg bg-gray-900 px-5 py-3 font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-                  >
-                    {publishing
-                      ? "Publishing..."
-                      : "Publish Gallery"}
-                  </button>
-                </div>
-              )}
-
-              {gallery.isPublished && (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-                  This gallery is live. Customers can access
-                  it using the gallery link and PIN.
-                </div>
-              )}
-            </div>
-          )}
-
-          {!gallery && (
-            <button
-              type="button"
-              onClick={handleCreateGallery}
-              disabled={
-                galleryLoading ||
-                selectedPhotos.length === 0
-              }
-              className="rounded-lg bg-gray-900 px-6 py-3 font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {galleryLoading
-                ? "Creating Gallery..."
-                : `Create Gallery (${selectedPhotos.length} Photos)`}
-            </button>
-          )}
-        </section>
-      </div>
-    </AdminLayout>
+    </div>
   );
-};
+}
 
-export default EventDetail;
+export default TeamEventDetail;
