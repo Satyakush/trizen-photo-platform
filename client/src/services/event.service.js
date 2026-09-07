@@ -10,6 +10,11 @@ export const getEvent = async (eventId) => {
   return response.data;
 };
 
+export const getGalleryByEventId = async (eventId) => {
+  const response = await api.get(`/events/${eventId}/gallery`);
+  return response.data;
+};
+
 export const createEvent = async (data) => {
   const response = await api.post("/events", data);
   return response.data;
@@ -21,11 +26,7 @@ export const getTeamMembers = async () => {
 };
 
 export const createTeamMember = async (data) => {
-  const response = await api.post(
-    "/events/team-members",
-    data
-  );
-
+  const response = await api.post("/events/team-members", data);
   return response.data;
 };
 

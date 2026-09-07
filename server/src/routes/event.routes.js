@@ -15,6 +15,7 @@ const {
   createEvent,
   getEvents,
   getEventById,
+  getGalleryByEventId,
   getTeamMembers,
   createTeamMember,
   assignTeamMember,
@@ -57,6 +58,14 @@ router.post(
   authorize("admin"),
   validate(createTeamMemberSchema),
   createTeamMember
+);
+
+router.get(
+  "/:eventId/gallery",
+  authenticate,
+  authorize("admin"),
+  validate(eventIdSchema, "params"),
+  getGalleryByEventId
 );
 
 router.get(

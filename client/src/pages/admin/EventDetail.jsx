@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   assignTeamMember,
   getEvent,
+  getGalleryByEventId,
   getTeamMembers,
 } from "../../services/event.service";
 
@@ -43,12 +44,14 @@ function EventDetail() {
 
   const [gallery, setGallery] = useState(null);
   const [galleryPin, setGalleryPin] = useState("");
+  const [isGalleryMissing, setIsGalleryMissing] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingGallery, setIsCreatingGallery] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -61,6 +64,8 @@ function EventDetail() {
     try {
       setIsLoading(true);
       setError("");
+      setMessage("");
+      setIsCopied(false);
 
       const [
         eventResponse,
@@ -86,6 +91,49 @@ function EventDetail() {
       );
 
       setPhotos(photosResponse || []);
+
+      /*
+       * Gallery is optional.
+       *
+       * A 404 here simply means that this event
+       * does not have a gallery yet.
+       */
+      try {
+        const galleryResponse =
+          await getGalleryByEventId(eventId);
+
+        const existingGallery =
+          galleryResponse.data ||
+          galleryResponse.gallery ||
+          null;
+
+        setGallery(existingGallery);
+        setIsGalleryMissing(!existingGallery);
+
+        /*
+         * Restore the gallery's selected photos.
+         * photoIds may be populated Photo objects.
+         */
+        if (existingGallery?.photoIds) {
+          setSelectedPhotos(
+            existingGallery.photoIds.map((photo) =>
+              typeof photo === "object"
+                ? photo._id
+                : photo
+            )
+          );
+        } else {
+          setSelectedPhotos([]);
+        }
+      } catch (galleryError) {
+        if (galleryError.response?.status === 404) {
+          setGallery(null);
+          setIsGalleryMissing(true);
+          setSelectedPhotos([]);
+        } else {
+          throw galleryError;
+        }
+      }
     } catch (err) {
       console.error("Failed to load event:", err);
 
@@ -286,6 +334,7 @@ function EventDetail() {
         response;
 
       setGallery(createdGallery);
+      setIsGalleryMissing(false);
 
       setActiveTab("gallery");
 
@@ -371,6 +420,22 @@ function EventDetail() {
     ? `${window.location.origin}/gallery/${gallery.slug}`
     : "";
 
+  const galleryPhotos = useMemo(() => {
+    if (!gallery?.photoIds) return [];
+
+    return gallery.photoIds
+      .map((photo) => {
+        if (typeof photo === "object") {
+          return photo;
+        }
+
+        return photos.find(
+          (item) => item._id === photo
+        );
+      })
+      .filter(Boolean);
+  }, [gallery, photos]);
+
   const copyGalleryLink = async () => {
     if (!galleryUrl) return;
 
@@ -379,14 +444,29 @@ function EventDetail() {
         galleryUrl
       );
 
+      setIsCopied(true);
       setMessage(
         "Gallery link copied to clipboard."
       );
+
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
     } catch {
       setError(
         "Unable to copy gallery link."
       );
     }
+  };
+
+  const openGallery = () => {
+    if (!galleryUrl) return;
+
+    window.open(
+      galleryUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   const formatFileSize = (bytes) => {
@@ -948,6 +1028,36 @@ function EventDetail() {
 
             </div>
 
+            {/* EXISTING GALLERY NOTICE */}
+
+            {gallery?.isPublished && (
+              <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+
+                <div>
+                  <p className="font-semibold text-blue-900">
+                    This event already has a published gallery.
+                  </p>
+
+                  <p className="mt-1 text-sm text-blue-700">
+                    {galleryPhotos.length} photo
+                    {galleryPhotos.length !== 1
+                      ? "s"
+                      : ""} currently published.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() =>
+                    setActiveTab("gallery")
+                  }
+                  className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  View Gallery →
+                </button>
+
+              </div>
+            )}
+
             {/* SELECTED FILES */}
 
             {selectedFiles.length > 0 && (
@@ -1101,8 +1211,6 @@ function EventDetail() {
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
 
-                      {/* DARK OVERLAY */}
-
                       <div
                         className={`absolute inset-0 transition ${
                           isSelected
@@ -1110,8 +1218,6 @@ function EventDetail() {
                             : "bg-black/0 group-hover:bg-black/10"
                         }`}
                       />
-
-                      {/* CHECK */}
 
                       <div
                         className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-2 transition ${
@@ -1122,8 +1228,6 @@ function EventDetail() {
                       >
                         ✓
                       </div>
-
-                      {/* INFO */}
 
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-10 opacity-0 transition group-hover:opacity-100">
 
@@ -1159,8 +1263,6 @@ function EventDetail() {
             {!gallery ? (
               <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                {/* HERO */}
-
                 <div className="bg-slate-900 px-6 py-10 text-center text-white md:px-12">
 
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl">
@@ -1178,8 +1280,6 @@ function EventDetail() {
                 </div>
 
                 <div className="p-6 md:p-10">
-
-                  {/* SELECTED COUNT */}
 
                   <div className="mb-8 flex items-center justify-between rounded-2xl bg-slate-50 p-5">
 
@@ -1205,8 +1305,6 @@ function EventDetail() {
                     </button>
 
                   </div>
-
-                  {/* PIN */}
 
                   <div className="mx-auto max-w-md">
 
@@ -1330,8 +1428,18 @@ function EventDetail() {
                       Customer PIN
                     </p>
 
-                    <p className="mt-2 text-3xl font-bold tracking-[0.35em] text-slate-900">
-                      {galleryPin}
+                    {galleryPin ? (
+                      <p className="mt-2 text-3xl font-bold tracking-[0.35em] text-slate-900">
+                        {galleryPin}
+                      </p>
+                    ) : (
+                      <p className="mt-2 font-semibold text-slate-700">
+                        Protected PIN
+                      </p>
+                    )}
+
+                    <p className="mt-2 text-xs text-slate-500">
+                      The PIN is securely stored and cannot be recovered after leaving this page.
                     </p>
 
                   </div>
@@ -1341,9 +1449,19 @@ function EventDetail() {
                   {gallery.slug && (
                     <div>
 
-                      <p className="mb-2 text-sm font-semibold text-slate-800">
-                        Shareable Gallery Link
-                      </p>
+                      <div className="mb-2 flex items-center justify-between">
+
+                        <p className="text-sm font-semibold text-slate-800">
+                          Shareable Gallery Link
+                        </p>
+
+                        {gallery.isPublished && (
+                          <span className="text-xs font-semibold text-emerald-600">
+                            ● LIVE
+                          </span>
+                        )}
+
+                      </div>
 
                       <div className="flex flex-col gap-2 sm:flex-row">
 
@@ -1360,40 +1478,100 @@ function EventDetail() {
                           onClick={
                             copyGalleryLink
                           }
-                          className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                          className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
+                            isCopied
+                              ? "bg-emerald-600 text-white"
+                              : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          }`}
                         >
-                          Copy Link
+                          {isCopied
+                            ? "✓ Copied"
+                            : "Copy Link"}
                         </button>
 
                       </div>
 
+                      {gallery.isPublished && (
+                        <button
+                          onClick={openGallery}
+                          className="mt-3 w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                        >
+                          View Customer Gallery →
+                        </button>
+                      )}
+
                     </div>
                   )}
 
-                  {/* SELECTED PHOTO COUNT */}
+                  {/* GALLERY PHOTOS */}
 
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+                  <div className="border-t border-slate-100 pt-6">
 
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        Gallery Photos
-                      </p>
+                    <div className="flex items-center justify-between">
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        {selectedPhotos.length} selected
-                      </p>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          Published Gallery Photos
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          {galleryPhotos.length} photo
+                          {galleryPhotos.length !== 1
+                            ? "s"
+                            : ""}{" "}
+                          selected for this gallery.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          setActiveTab(
+                            "photos"
+                          )
+                        }
+                        className="text-sm font-semibold text-slate-700 underline underline-offset-4"
+                      >
+                        Manage Photos
+                      </button>
+
                     </div>
 
-                    <button
-                      onClick={() =>
-                        setActiveTab(
-                          "photos"
-                        )
-                      }
-                      className="text-sm font-semibold text-slate-700 underline underline-offset-4"
-                    >
-                      View Photos
-                    </button>
+                    {galleryPhotos.length > 0 ? (
+                      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+
+                        {galleryPhotos.map(
+                          (photo) => (
+                            <div
+                              key={photo._id}
+                              className="group relative aspect-square overflow-hidden rounded-2xl bg-slate-100"
+                            >
+                              <img
+                                src={
+                                  photo.storageUrl
+                                }
+                                alt={
+                                  photo.filename
+                                }
+                                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                              />
+
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
+                                <p className="truncate text-xs font-medium text-white">
+                                  {photo.filename}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        )}
+
+                      </div>
+                    ) : (
+                      <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center">
+                        <p className="text-sm text-slate-500">
+                          No photos selected for this gallery.
+                        </p>
+                      </div>
+                    )}
 
                   </div>
 
@@ -1442,7 +1620,8 @@ function EventDetail() {
       ================================= */}
 
       {activeTab === "photos" &&
-        selectedPhotos.length > 0 && (
+        selectedPhotos.length > 0 &&
+        !gallery && (
           <div className="fixed inset-x-0 bottom-5 z-50 px-4">
 
             <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-2xl ring-1 ring-white/10">

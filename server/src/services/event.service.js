@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
 const Event = require("../models/Event");
+const Gallery = require("../models/Gallery");
 
 const createEvent = async (data, adminId) => {
   const event = await Event.create({
@@ -55,6 +56,39 @@ const getEventById = async (eventId, user) => {
   }
 
   return event;
+};
+
+const getGalleryByEventId = async (eventId, adminId) => {
+  const event = await Event.findById(eventId).select("createdBy");
+
+  if (!event) {
+    const error = new Error("Event not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (event.createdBy.toString() !== adminId) {
+    const error = new Error(
+      "You are not authorized to access this event gallery"
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const gallery = await Gallery.findOne({ eventId })
+    .populate(
+      "photoIds",
+      "eventId uploadedBy filename storageUrl storagePublicId fileSize createdAt"
+    )
+    .populate("createdBy", "name email role");
+
+  if (!gallery) {
+    const error = new Error("Gallery not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return gallery;
 };
 
 const getTeamMembers = async () => {
@@ -143,6 +177,7 @@ module.exports = {
   createEvent,
   getEvents,
   getEventById,
+  getGalleryByEventId,
   getTeamMembers,
   createTeamMember,
   assignTeamMember,

@@ -11,6 +11,9 @@ import TeamMembers from "../pages/admin/TeamMembers";
 import TeamDashboard from "../pages/team/TeamDashboard";
 import TeamEventDetail from "../pages/team/TeamEventDetail";
 
+import GalleryAccess from "../pages/public/GalleryAccess";
+import PublicGallery from "../pages/public/PublicGallery";
+
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
 
@@ -49,15 +52,16 @@ const HomeRedirect = () => {
   return <Navigate to="/team" replace />;
 };
 
-const PublicGallery = () => (
-  <div className="p-8">Public Gallery</div>
-);
-
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      {/* Auth */}
+      <Route
+        path="/login"
+        element={<Login />}
+      />
 
+      {/* Home */}
       <Route
         path="/"
         element={
@@ -67,7 +71,10 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Admin */}
+      {/* ================================
+          ADMIN
+      ================================= */}
+
       <Route
         path="/admin"
         element={
@@ -95,11 +102,16 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Team Member */}
+      {/* ================================
+          TEAM MEMBER
+      ================================= */}
+
       <Route
         path="/team"
         element={
-          <RoleRoute allowedRoles={["team_member"]}>
+          <RoleRoute
+            allowedRoles={["team_member"]}
+          >
             <TeamDashboard />
           </RoleRoute>
         }
@@ -108,18 +120,29 @@ const AppRoutes = () => {
       <Route
         path="/team/events/:eventId"
         element={
-          <RoleRoute allowedRoles={["team_member"]}>
+          <RoleRoute
+            allowedRoles={["team_member"]}
+          >
             <TeamEventDetail />
           </RoleRoute>
         }
       />
 
-      {/* Customer */}
+      {/* ================================
+          CUSTOMER GALLERY
+      ================================= */}
+
       <Route
         path="/gallery/:slug"
+        element={<GalleryAccess />}
+      />
+
+      <Route
+        path="/gallery/:slug/view"
         element={<PublicGallery />}
       />
 
+      {/* Fallback */}
       <Route
         path="*"
         element={<Navigate to="/" replace />}

@@ -46,6 +46,22 @@ const getEventById = async (req, res, next) => {
   }
 };
 
+const getGalleryByEventId = async (req, res, next) => {
+  try {
+    const gallery = await eventService.getGalleryByEventId(
+      req.params.eventId,
+      req.user.id
+    );
+
+    res.status(200).json({
+      success: true,
+      gallery,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getTeamMembers = async (req, res, next) => {
   try {
     const teamMembers = await eventService.getTeamMembers();
@@ -97,6 +113,7 @@ module.exports = {
   createEvent,
   getEvents,
   getEventById,
+  getGalleryByEventId,
   getTeamMembers,
   createTeamMember,
   assignTeamMember,

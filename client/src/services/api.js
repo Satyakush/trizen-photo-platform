@@ -14,8 +14,20 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    /*
+     * Only attach the normal Admin/Team JWT when
+     * the request does not already provide an
+     * Authorization header.
+     *
+     * This is important for customer gallery requests,
+     * because they use a separate gallery-specific token.
+     */
+    if (
+      token &&
+      !config.headers.Authorization
+    ) {
+      config.headers.Authorization =
+        `Bearer ${token}`;
     }
 
     return config;
@@ -27,7 +39,29 @@ api.interceptors.response.use(
   (response) => response,
 
   (error) => {
-    if (error.response?.status === 401) {
+    /*
+     * Only clear the normal login session when the
+     * request was using the normal authentication
+     * flow.
+     *
+     * A gallery-token failure should NOT log an
+     * Admin/Team user out.
+     */
+    const requestAuthorization =
+      error.config?.headers?.Authorization;
+
+    const isGalleryRequest =
+      requestAuthorization &&
+      requestAuthorization.startsWith(
+        "Bearer "
+      ) &&
+      requestAuthorization !==
+        `Bearer ${localStorage.getItem("token")}`;
+
+    if (
+      error.response?.status === 401 &&
+      !isGalleryRequest
+    ) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
     }
