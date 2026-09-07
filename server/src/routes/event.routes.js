@@ -1,25 +1,27 @@
 const express = require("express");
 
-const {
-  createEvent,
-  getEvents,
-  createTeamMember,
-  assignTeamMember,
-} = require("../controllers/event.controller");
-
 const authenticate = require("../middleware/auth.middleware");
 const authorize = require("../middleware/role.middleware");
 const validate = require("../middleware/validate.middleware");
 
 const {
   createEventSchema,
+  eventIdSchema,
   createTeamMemberSchema,
   assignTeamMemberSchema,
 } = require("../validators/event.validator");
 
+const {
+  createEvent,
+  getEvents,
+  getEventById,
+  getTeamMembers,
+  createTeamMember,
+  assignTeamMember,
+} = require("../controllers/event.controller");
+
 const router = express.Router();
 
-// Create an event
 router.post(
   "/",
   authenticate,
@@ -28,7 +30,6 @@ router.post(
   createEvent
 );
 
-// Get events for current user
 router.get(
   "/",
   authenticate,
@@ -36,7 +37,20 @@ router.get(
   getEvents
 );
 
-// Create a team member
+/*
+ * Team member management
+ *
+ * These routes must come BEFORE /:eventId
+ * so "team-members" is not interpreted as an event ID.
+ */
+
+router.get(
+  "/team-members",
+  authenticate,
+  authorize("admin"),
+  getTeamMembers
+);
+
 router.post(
   "/team-members",
   authenticate,
@@ -45,11 +59,19 @@ router.post(
   createTeamMember
 );
 
-// Assign team member to an event
+router.get(
+  "/:eventId",
+  authenticate,
+  authorize("admin", "team_member"),
+  validate(eventIdSchema, "params"),
+  getEventById
+);
+
 router.post(
   "/:eventId/team",
   authenticate,
   authorize("admin"),
+  validate(eventIdSchema, "params"),
   validate(assignTeamMemberSchema),
   assignTeamMember
 );

@@ -1,47 +1,80 @@
 const bcrypt = require("bcryptjs");
 
-const Event = require("../models/Event");
 const User = require("../models/User");
+const Event = require("../models/Event");
 
-const createEvent = async (adminId, eventData) => {
+const createEvent = async (data, adminId) => {
   const event = await Event.create({
-    ...eventData,
+    ...data,
     createdBy: adminId,
   });
 
   return event;
 };
 
-const getEventsForUser = async (user) => {
+const getEvents = async (user) => {
   if (user.role === "admin") {
-    return Event.find({
-      createdBy: user.id,
-    })
+    return Event.find({ createdBy: user.id })
       .populate("teamMembers", "name email role")
-      .sort({ createdAt: -1 });
+      .sort({ eventDate: -1 });
   }
 
-  return Event.find({
-    teamMembers: user.id,
-  })
+  return Event.find({ teamMembers: user.id })
     .populate("createdBy", "name email")
+    .populate("teamMembers", "name email role")
+    .sort({ eventDate: -1 });
+};
+
+const getEventById = async (eventId, user) => {
+  const event = await Event.findById(eventId)
+    .populate("createdBy", "name email role")
+    .populate("teamMembers", "name email role");
+
+  if (!event) {
+    const error = new Error("Event not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isAdminOwner =
+    user.role === "admin" &&
+    event.createdBy._id.toString() === user.id;
+
+  const isAssignedTeamMember =
+    user.role === "team_member" &&
+    event.teamMembers.some(
+      (member) => member._id.toString() === user.id
+    );
+
+  if (!isAdminOwner && !isAssignedTeamMember) {
+    const error = new Error(
+      "You are not authorized to access this event"
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return event;
+};
+
+const getTeamMembers = async () => {
+  return User.find({ role: "team_member" })
+    .select("name email role createdAt")
     .sort({ createdAt: -1 });
 };
 
-const createTeamMember = async ({
-  name,
-  email,
-  password,
-}) => {
+const createTeamMember = async ({ name, email, password }) => {
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
-    const error = new Error("Email is already registered");
+    const error = new Error(
+      "A user with this email already exists"
+    );
     error.statusCode = 409;
     throw error;
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const teamMember = await User.create({
     name,
@@ -58,48 +91,41 @@ const createTeamMember = async ({
   };
 };
 
-const assignTeamMember = async (
-  eventId,
-  adminId,
-  userId
-) => {
-  const event = await Event.findOne({
-    _id: eventId,
-    createdBy: adminId,
-  });
+const assignTeamMember = async (eventId, userId, adminId) => {
+  const event = await Event.findById(eventId);
 
   if (!event) {
-    const error = new Error(
-      "Event not found or you are not authorized to manage it"
-    );
-
+    const error = new Error("Event not found");
     error.statusCode = 404;
-
     throw error;
   }
 
-  const user = await User.findById(userId);
+  if (event.createdBy.toString() !== adminId) {
+    const error = new Error(
+      "You are not authorized to modify this event"
+    );
+    error.statusCode = 403;
+    throw error;
+  }
 
-  if (!user || user.role !== "team_member") {
-    const error = new Error("Valid team member not found");
+  const teamMember = await User.findOne({
+    _id: userId,
+    role: "team_member",
+  });
 
+  if (!teamMember) {
+    const error = new Error("Team member not found");
     error.statusCode = 404;
-
     throw error;
   }
 
   const alreadyAssigned = event.teamMembers.some(
-    (memberId) =>
-      memberId.toString() === userId.toString()
+    (memberId) => memberId.toString() === userId
   );
 
   if (alreadyAssigned) {
-    const error = new Error(
-      "Team member is already assigned to this event"
-    );
-
-    error.statusCode = 409;
-
+    const error = new Error("Team member is already assigned");
+    error.statusCode = 400;
     throw error;
   }
 
@@ -107,7 +133,7 @@ const assignTeamMember = async (
 
   await event.save();
 
-  return Event.findById(event._id).populate(
+  return Event.findById(eventId).populate(
     "teamMembers",
     "name email role"
   );
@@ -115,7 +141,9 @@ const assignTeamMember = async (
 
 module.exports = {
   createEvent,
-  getEventsForUser,
+  getEvents,
+  getEventById,
+  getTeamMembers,
   createTeamMember,
   assignTeamMember,
 };
