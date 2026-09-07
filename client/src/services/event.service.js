@@ -11,29 +11,65 @@ export const getEvent = async (eventId) => {
 };
 
 export const getGalleryByEventId = async (eventId) => {
-  const response = await api.get(`/events/${eventId}/gallery`);
+  const response = await api.get(
+    `/events/${eventId}/gallery`
+  );
+
   return response.data;
 };
 
 export const createEvent = async (data) => {
-  const response = await api.post("/events", data);
+  const response = await api.post(
+    "/events",
+    data
+  );
+
+  return response.data;
+};
+
+export const deleteEvent = async (eventId) => {
+  const response = await api.delete(
+    `/events/${eventId}`
+  );
+
   return response.data;
 };
 
 export const getTeamMembers = async () => {
-  const response = await api.get("/events/team-members");
+  const response = await api.get(
+    "/events/team-members"
+  );
+
   return response.data;
 };
 
 export const createTeamMember = async (data) => {
-  const response = await api.post("/events/team-members", data);
+  const response = await api.post(
+    "/events/team-members",
+    data
+  );
+
   return response.data;
 };
 
-export const assignTeamMember = async (eventId, userId) => {
+export const assignTeamMember = async (
+  eventId,
+  userId
+) => {
   const response = await api.post(
     `/events/${eventId}/team`,
     { userId }
+  );
+
+  return response.data;
+};
+
+export const removeTeamMember = async (
+  eventId,
+  userId
+) => {
+  const response = await api.delete(
+    `/events/${eventId}/team/${userId}`
   );
 
   return response.data;

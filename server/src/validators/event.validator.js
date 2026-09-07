@@ -28,6 +28,12 @@ const eventIdSchema = z.object({
     .regex(/^[0-9a-fA-F]{24}$/, "Invalid event ID"),
 });
 
+const userIdSchema = z.object({
+  userId: z
+    .string()
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid user ID"),
+});
+
 const createTeamMemberSchema = z.object({
   name: z
     .string()
@@ -55,6 +61,7 @@ const assignTeamMemberSchema = z.object({
 module.exports = {
   createEventSchema,
   eventIdSchema,
+  userIdSchema,
   createTeamMemberSchema,
   assignTeamMemberSchema,
 };

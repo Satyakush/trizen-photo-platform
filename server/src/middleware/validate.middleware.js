@@ -1,6 +1,9 @@
 const validate = (schema, source = "body") => {
   return (req, res, next) => {
-    const data = source === "params" ? req.params : req.body;
+    const data =
+      source === "params"
+        ? req.params
+        : req.body;
 
     const result = schema.safeParse(data);
 
@@ -23,7 +26,21 @@ const validate = (schema, source = "body") => {
     }
 
     if (source === "params") {
-      req.params = result.data;
+      /*
+       * Preserve existing route params.
+       *
+       * This is important when multiple parameter
+       * validation middlewares are used on the same route.
+       *
+       * Example:
+       * req.params = { eventId, userId }
+       *
+       * Validating eventId should not remove userId.
+       */
+      req.params = {
+        ...req.params,
+        ...result.data,
+      };
     } else {
       req.body = result.data;
     }

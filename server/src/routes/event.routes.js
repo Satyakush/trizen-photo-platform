@@ -9,6 +9,7 @@ const {
   eventIdSchema,
   createTeamMemberSchema,
   assignTeamMemberSchema,
+  userIdSchema,
 } = require("../validators/event.validator");
 
 const {
@@ -16,13 +17,18 @@ const {
   getEvents,
   getEventById,
   getGalleryByEventId,
+  deleteEvent,
   getTeamMembers,
   createTeamMember,
   assignTeamMember,
+  removeTeamMember,
 } = require("../controllers/event.controller");
 
 const router = express.Router();
 
+/*
+ * CREATE EVENT
+ */
 router.post(
   "/",
   authenticate,
@@ -31,6 +37,9 @@ router.post(
   createEvent
 );
 
+/*
+ * GET EVENTS
+ */
 router.get(
   "/",
   authenticate,
@@ -39,12 +48,8 @@ router.get(
 );
 
 /*
- * Team member management
- *
- * These routes must come BEFORE /:eventId
- * so "team-members" is not interpreted as an event ID.
+ * TEAM MEMBERS
  */
-
 router.get(
   "/team-members",
   authenticate,
@@ -60,6 +65,9 @@ router.post(
   createTeamMember
 );
 
+/*
+ * EVENT GALLERY
+ */
 router.get(
   "/:eventId/gallery",
   authenticate,
@@ -68,6 +76,35 @@ router.get(
   getGalleryByEventId
 );
 
+/*
+ * REMOVE TEAM MEMBER FROM EVENT
+ *
+ * Both eventId and userId are validated.
+ * The validation middleware now preserves both params.
+ */
+router.delete(
+  "/:eventId/team/:userId",
+  authenticate,
+  authorize("admin"),
+  validate(eventIdSchema, "params"),
+  validate(userIdSchema, "params"),
+  removeTeamMember
+);
+
+/*
+ * DELETE EVENT
+ */
+router.delete(
+  "/:eventId",
+  authenticate,
+  authorize("admin"),
+  validate(eventIdSchema, "params"),
+  deleteEvent
+);
+
+/*
+ * GET EVENT BY ID
+ */
 router.get(
   "/:eventId",
   authenticate,
@@ -76,6 +113,9 @@ router.get(
   getEventById
 );
 
+/*
+ * ASSIGN TEAM MEMBER
+ */
 router.post(
   "/:eventId/team",
   authenticate,

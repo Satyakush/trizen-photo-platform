@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Event = require("../models/Event");
 const Gallery = require("../models/Gallery");
+const Photo = require("../models/Photo");
+const cloudinary = require("../config/cloudinary");
 
 const createEvent = async (data, adminId) => {
   const event = await Event.create({
@@ -59,7 +61,9 @@ const getEventById = async (eventId, user) => {
 };
 
 const getGalleryByEventId = async (eventId, adminId) => {
-  const event = await Event.findById(eventId).select("createdBy");
+  const event = await Event.findById(eventId).select(
+    "createdBy"
+  );
 
   if (!event) {
     const error = new Error("Event not found");
@@ -91,13 +95,79 @@ const getGalleryByEventId = async (eventId, adminId) => {
   return gallery;
 };
 
+/*
+ * Delete an event and all resources belonging to it.
+ */
+const deleteEvent = async (eventId, adminId) => {
+  const event = await Event.findById(eventId).select(
+    "createdBy"
+  );
+
+  if (!event) {
+    const error = new Error("Event not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (event.createdBy.toString() !== adminId) {
+    const error = new Error(
+      "You are not authorized to delete this event"
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const photos = await Photo.find({ eventId }).select(
+    "storagePublicId"
+  );
+
+  const publicIds = photos
+    .map((photo) => photo.storagePublicId)
+    .filter(Boolean);
+
+  if (publicIds.length > 0) {
+    try {
+      await cloudinary.api.delete_resources(publicIds, {
+        resource_type: "image",
+        type: "upload",
+      });
+    } catch (error) {
+      console.error(
+        "Cloudinary event cleanup failed:",
+        error
+      );
+
+      const cleanupError = new Error(
+        "Failed to delete event photos from storage. The event was not deleted."
+      );
+
+      cleanupError.statusCode = 500;
+
+      throw cleanupError;
+    }
+  }
+
+  await Gallery.deleteOne({ eventId });
+  await Photo.deleteMany({ eventId });
+  await Event.deleteOne({ _id: eventId });
+
+  return {
+    eventId,
+    deletedPhotos: photos.length,
+  };
+};
+
 const getTeamMembers = async () => {
   return User.find({ role: "team_member" })
     .select("name email role createdAt")
     .sort({ createdAt: -1 });
 };
 
-const createTeamMember = async ({ name, email, password }) => {
+const createTeamMember = async ({
+  name,
+  email,
+  password,
+}) => {
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
@@ -125,7 +195,11 @@ const createTeamMember = async ({ name, email, password }) => {
   };
 };
 
-const assignTeamMember = async (eventId, userId, adminId) => {
+const assignTeamMember = async (
+  eventId,
+  userId,
+  adminId
+) => {
   const event = await Event.findById(eventId);
 
   if (!event) {
@@ -154,11 +228,14 @@ const assignTeamMember = async (eventId, userId, adminId) => {
   }
 
   const alreadyAssigned = event.teamMembers.some(
-    (memberId) => memberId.toString() === userId
+    (memberId) =>
+      memberId.toString() === userId
   );
 
   if (alreadyAssigned) {
-    const error = new Error("Team member is already assigned");
+    const error = new Error(
+      "Team member is already assigned"
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -173,12 +250,99 @@ const assignTeamMember = async (eventId, userId, adminId) => {
   );
 };
 
+/*
+ * Remove a team member from an event.
+ *
+ * IMPORTANT:
+ * This removes ONLY the event assignment.
+ *
+ * The user account remains untouched.
+ * Existing photos remain untouched.
+ *
+ * The operation is intentionally idempotent:
+ * if the member is already removed, we simply
+ * return the current event instead of throwing 400/404.
+ */
+const removeTeamMember = async (
+  eventId,
+  userId,
+  adminId
+) => {
+  const event = await Event.findById(eventId);
+
+  if (!event) {
+    const error = new Error("Event not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Only the Admin who owns the event can modify it.
+  if (event.createdBy.toString() !== adminId) {
+    const error = new Error(
+      "You are not authorized to modify this event"
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const wasAssigned = event.teamMembers.some(
+    (memberId) =>
+      memberId.toString() === userId.toString()
+  );
+
+  /*
+   * If the member is already removed, don't treat
+   * that as an error.
+   */
+  if (!wasAssigned) {
+    const currentEvent = await Event.findById(eventId)
+      .populate(
+        "teamMembers",
+        "name email role"
+      );
+
+    return {
+      event: currentEvent,
+      alreadyRemoved: true,
+    };
+  }
+
+  /*
+   * Remove only the assignment.
+   *
+   * Do NOT delete:
+   * - User
+   * - Photos
+   * - Cloudinary files
+   */
+  event.teamMembers = event.teamMembers.filter(
+    (memberId) =>
+      memberId.toString() !== userId.toString()
+  );
+
+  await event.save();
+
+  const updatedEvent = await Event.findById(
+    eventId
+  ).populate(
+    "teamMembers",
+    "name email role"
+  );
+
+  return {
+    event: updatedEvent,
+    alreadyRemoved: false,
+  };
+};
+
 module.exports = {
   createEvent,
   getEvents,
   getEventById,
   getGalleryByEventId,
+  deleteEvent,
   getTeamMembers,
   createTeamMember,
   assignTeamMember,
+  removeTeamMember,
 };

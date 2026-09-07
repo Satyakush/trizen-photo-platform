@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import {
   assignTeamMember,
+  removeTeamMember,
   getEvent,
   getGalleryByEventId,
   getTeamMembers,
@@ -48,6 +49,8 @@ function EventDetail() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingGallery, setIsCreatingGallery] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -183,6 +186,38 @@ function EventDetail() {
       );
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!memberToRemove?._id) return;
+
+    try {
+      setIsRemovingMember(true);
+      setError("");
+      setMessage("");
+
+      const response = await removeTeamMember(
+        eventId,
+        memberToRemove._id
+      );
+
+      setMemberToRemove(null);
+      setMessage(
+        response.message ||
+          "Team member removed from this event."
+      );
+
+      await loadEventData();
+    } catch (err) {
+      console.error("Failed to remove team member:", err);
+
+      setError(
+        err.response?.data?.message ||
+          "Failed to remove team member."
+      );
+    } finally {
+      setIsRemovingMember(false);
     }
   };
 
@@ -939,9 +974,25 @@ function EventDetail() {
                             </p>
                           </div>
 
-                          <span className="ml-auto text-xs font-semibold text-emerald-600">
-                            Assigned
-                          </span>
+                          <div className="ml-auto flex items-center gap-2">
+                            <span className="hidden text-xs font-semibold text-emerald-600 sm:inline">
+                              Assigned
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setMemberToRemove({
+                                  _id: memberId,
+                                  name: fullMember?.name || "Team Member",
+                                  email: fullMember?.email || "",
+                                })
+                              }
+                              className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50"
+                            >
+                              Remove
+                            </button>
+                          </div>
 
                         </div>
                       );
@@ -1614,6 +1665,62 @@ function EventDetail() {
         )}
 
       </main>
+
+      {/* =================================
+          REMOVE TEAM MEMBER MODAL
+      ================================= */}
+
+      {memberToRemove && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-member-title"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-xl">
+              ⚠
+            </div>
+
+            <h2
+              id="remove-member-title"
+              className="mt-5 text-xl font-bold text-slate-900"
+            >
+              Remove team member?
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              <span className="font-semibold text-slate-800">
+                {memberToRemove.name}
+              </span>{" "}
+              will no longer have access to this event. Their account and
+              existing uploaded photos will remain unchanged.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setMemberToRemove(null)}
+                disabled={isRemovingMember}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRemoveMember}
+                disabled={isRemovingMember}
+                className="rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isRemovingMember
+                  ? "Removing..."
+                  : "Remove Member"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =================================
           FLOATING SELECTION BAR

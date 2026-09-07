@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import Login from "../pages/auth/Login";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
+import Events from "../pages/admin/Events";
 import EventDetail from "../pages/admin/EventDetail";
 import TeamMembers from "../pages/admin/TeamMembers";
 
@@ -56,12 +57,14 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Auth */}
+
       <Route
         path="/login"
         element={<Login />}
       />
 
       {/* Home */}
+
       <Route
         path="/"
         element={
@@ -80,6 +83,15 @@ const AppRoutes = () => {
         element={
           <RoleRoute allowedRoles={["admin"]}>
             <AdminDashboard />
+          </RoleRoute>
+        }
+      />
+
+      <Route
+        path="/admin/events"
+        element={
+          <RoleRoute allowedRoles={["admin"]}>
+            <Events />
           </RoleRoute>
         }
       />
@@ -143,9 +155,15 @@ const AppRoutes = () => {
       />
 
       {/* Fallback */}
+
       <Route
         path="*"
-        element={<Navigate to="/" replace />}
+        element={
+          <Navigate
+            to="/"
+            replace
+          />
+        }
       />
     </Routes>
   );
