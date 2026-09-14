@@ -16,6 +16,7 @@ const validate = require("../middleware/validate.middleware");
 
 const {
   createGallerySchema,
+  updateGallerySchema,
   eventIdSchema,
   galleryIdSchema,
   gallerySlugSchema,
@@ -46,6 +47,7 @@ router.put(
   authenticate,
   authorize("admin"),
   validate(galleryIdSchema, "params"),
+  validate(updateGallerySchema),
   updateGallery
 );
 
