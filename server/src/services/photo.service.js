@@ -63,8 +63,13 @@ const uploadToCloudinary = (file, eventId) => {
 };
 
 const deleteFromCloudinary = async (publicId) => {
+  if (!publicId) return;
+
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: "image",
+      type: "upload",
+    });
   } catch (error) {
     console.error(
       "Failed to delete Cloudinary image:",
@@ -89,6 +94,7 @@ const uploadPhotos = async (
     throw error;
   }
 
+  const uploadedPublicIds = [];
   const uploadedPhotos = [];
 
   try {
@@ -97,6 +103,8 @@ const uploadPhotos = async (
         file,
         eventId
       );
+
+      uploadedPublicIds.push(result.public_id);
 
       const photo = await Photo.create({
         eventId,
@@ -112,10 +120,16 @@ const uploadPhotos = async (
 
     return uploadedPhotos;
   } catch (error) {
-    for (const photo of uploadedPhotos) {
-      await deleteFromCloudinary(
-        photo.storagePublicId
-      );
+    for (const publicId of uploadedPublicIds) {
+      await deleteFromCloudinary(publicId);
+    }
+
+    if (uploadedPhotos.length > 0) {
+      await Photo.deleteMany({
+        _id: {
+          $in: uploadedPhotos.map((photo) => photo._id),
+        },
+      });
     }
 
     throw error;

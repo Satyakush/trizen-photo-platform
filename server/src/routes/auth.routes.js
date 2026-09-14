@@ -6,6 +6,7 @@ const {
 } = require("../controllers/auth.controller");
 
 const validate = require("../middleware/validate.middleware");
+const requireSetupKey = require("../middleware/setup.middleware");
 
 const {
   registerSchema,
@@ -16,6 +17,7 @@ const router = express.Router();
 
 router.post(
   "/register",
+  requireSetupKey,
   validate(registerSchema),
   register
 );

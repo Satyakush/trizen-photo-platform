@@ -1,15 +1,15 @@
 const { z } = require("zod");
 
+const photoId = z
+  .string()
+  .regex(
+    /^[0-9a-fA-F]{24}$/,
+    "Invalid photo ID"
+  );
+
 const createGallerySchema = z.object({
   photoIds: z
-    .array(
-      z
-        .string()
-        .regex(
-          /^[0-9a-fA-F]{24}$/,
-          "Invalid photo ID"
-        )
-    )
+    .array(photoId)
     .min(1, "Select at least one photo"),
 
   pin: z
@@ -18,6 +18,20 @@ const createGallerySchema = z.object({
       /^\d{4,6}$/,
       "PIN must contain 4 to 6 digits"
     ),
+});
+
+const updateGallerySchema = z.object({
+  photoIds: z
+    .array(photoId)
+    .min(1, "Select at least one photo"),
+
+  pin: z
+    .string()
+    .regex(
+      /^\d{4,6}$/,
+      "PIN must contain 4 to 6 digits"
+    )
+    .optional(),
 });
 
 const eventIdSchema = z.object({
@@ -57,6 +71,7 @@ const verifyGallerySchema = z.object({
 
 module.exports = {
   createGallerySchema,
+  updateGallerySchema,
   eventIdSchema,
   galleryIdSchema,
   gallerySlugSchema,
