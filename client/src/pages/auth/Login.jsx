@@ -13,6 +13,7 @@ const Login = () => {
     password: "",
   });
 
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,7 +33,7 @@ const Login = () => {
     try {
       const response = await loginUser(form);
 
-      login(response.data);
+      login(response.data, remember);
 
       if (response.data.user.role === "admin") {
         navigate("/admin");
@@ -115,6 +116,8 @@ const Login = () => {
                 placeholder="••••••••"
               />
             </div>
+
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600"><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} className="h-4 w-4 accent-gray-950"/> Remember me</label>
 
             <button
               type="submit"
