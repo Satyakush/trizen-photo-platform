@@ -7,8 +7,7 @@ import {
 const AuthContext = createContext(null);
 
 const getStoredUser = () => {
-  const storedUser =
-    localStorage.getItem("user");
+  const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
 
   if (!storedUser) {
     return null;
@@ -18,7 +17,9 @@ const getStoredUser = () => {
     return JSON.parse(storedUser);
   } catch {
     localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
 
     return null;
   }
@@ -33,16 +34,11 @@ export const AuthProvider = ({ children }) => {
     getStoredUser
   );
 
-  const login = (data) => {
-    localStorage.setItem(
-      "token",
-      data.token
-    );
+  const login = (data, remember = false) => {
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem("token", data.token);
 
-    localStorage.setItem(
-      "user",
-      JSON.stringify(data.user)
-    );
+    storage.setItem("user", JSON.stringify(data.user));
 
     setToken(data.token);
     setUser(data.user);
@@ -51,6 +47,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
 
     setToken(null);
     setUser(null);
