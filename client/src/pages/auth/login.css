@@ -1,0 +1,142 @@
+.trizen-login {
+  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  background: #09090b;
+  isolation: isolate;
+}
+.trizen-login__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(9,9,11,.78), rgba(9,9,11,.34) 48%, rgba(9,9,11,.76)),
+    url('/trizen-photo.png') center / cover no-repeat;
+  z-index: -2;
+  transform: scale(1.02);
+}
+.trizen-login__glow {
+  position: absolute;
+  width: 28rem;
+  height: 28rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  filter: blur(70px);
+  top: -14rem;
+  right: -10rem;
+  z-index: -1;
+}
+.trizen-login__layout {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
+  gap: clamp(2rem, 7vw, 7rem);
+  align-items: center;
+}
+.trizen-login__intro { color: white; max-width: 560px; }
+.trizen-login__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .8rem;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(14px);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.trizen-login__mark {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: .65rem;
+  background: white;
+  color: #09090b;
+}
+.trizen-login__intro h1 {
+  margin: 1.4rem 0 0;
+  font-size: clamp(2.8rem, 6vw, 5.5rem);
+  line-height: .94;
+  letter-spacing: -.055em;
+  font-weight: 900;
+}
+.trizen-login__intro p {
+  max-width: 500px;
+  margin: 1.5rem 0 0;
+  color: rgba(255,255,255,.72);
+  font-size: clamp(.95rem, 1.5vw, 1.15rem);
+  line-height: 1.7;
+}
+.trizen-login__card {
+  width: 100%;
+  padding: clamp(1.35rem, 4vw, 2.25rem);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 1.75rem;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 30px 90px rgba(0,0,0,.34);
+  backdrop-filter: blur(22px);
+}
+.trizen-login__brand { display:flex; align-items:center; gap:.8rem; margin-bottom:1.6rem; }
+.trizen-login__brand-mark { width:2.7rem; height:2.7rem; display:grid; place-items:center; border-radius:.85rem; background:#09090b; color:#fff; font-weight:900; }
+.trizen-login__brand strong { display:block; color:#09090b; font-size:1rem; }
+.trizen-login__brand span { display:block; color:#71717a; font-size:.72rem; margin-top:.12rem; }
+.trizen-login__card h2 { margin:0; color:#09090b; font-size:clamp(1.65rem,4vw,2.15rem); line-height:1.05; letter-spacing:-.04em; }
+.trizen-login__subtitle { margin:.55rem 0 0; color:#71717a; font-size:.9rem; line-height:1.55; }
+.trizen-login__error { margin:1rem 0 0; padding:.75rem .85rem; border:1px solid #fecaca; border-radius:.8rem; background:#fef2f2; color:#b91c1c; font-size:.82rem; }
+.trizen-login__form { margin-top:1.35rem; display:grid; gap:1rem; }
+.trizen-login__field { display:grid; gap:.45rem; }
+.trizen-login__field > span { color:#27272a; font-size:.78rem; font-weight:750; }
+.trizen-login__control { position:relative; }
+.trizen-login__control input {
+  width:100%;
+  min-height:3.15rem;
+  border:1px solid #d4d4d8;
+  border-radius:.85rem;
+  background:#fff;
+  padding:.8rem 1rem;
+  color:#18181b;
+  outline:none;
+  transition:border-color .18s, box-shadow .18s;
+}
+.trizen-login__control input:focus { border-color:#52525b; box-shadow:0 0 0 4px rgba(24,24,27,.08); }
+.trizen-login__control input.has-toggle { padding-right:3.1rem; }
+.trizen-login__toggle {
+  position:absolute; top:50%; right:.55rem; transform:translateY(-50%);
+  width:2.2rem; height:2.2rem; border:0; border-radius:.6rem;
+  background:transparent; color:#71717a; cursor:pointer;
+}
+.trizen-login__toggle:hover { background:#f4f4f5; color:#18181b; }
+.trizen-login__remember { display:flex; align-items:center; gap:.55rem; color:#52525b; font-size:.8rem; cursor:pointer; }
+.trizen-login__remember input { width:1rem; height:1rem; accent-color:#09090b; }
+.trizen-login__submit {
+  min-height:3.2rem; border:0; border-radius:.85rem; background:#09090b; color:white;
+  font-weight:800; cursor:pointer; box-shadow:0 12px 24px rgba(9,9,11,.16);
+  transition:transform .18s, background .18s, box-shadow .18s;
+}
+.trizen-login__submit:hover:not(:disabled) { transform:translateY(-1px); background:#27272a; box-shadow:0 16px 28px rgba(9,9,11,.2); }
+.trizen-login__submit:disabled { opacity:.55; cursor:not-allowed; }
+.trizen-login__footer { margin:1.25rem 0 0; color:#71717a; text-align:center; font-size:.76rem; line-height:1.5; }
+.trizen-login__footer a { color:#18181b; font-weight:800; text-decoration:none; }
+@media (max-width: 900px) {
+  .trizen-login { align-items:flex-start; padding-top:2rem; padding-bottom:2rem; }
+  .trizen-login__layout { grid-template-columns:1fr; gap:1.5rem; max-width:560px; }
+  .trizen-login__intro { text-align:center; margin:auto; }
+  .trizen-login__intro p { margin-left:auto; margin-right:auto; }
+  .trizen-login__intro h1 { font-size:clamp(2.6rem,10vw,4.5rem); }
+}
+@media (max-width: 520px) {
+  .trizen-login { padding:1rem; }
+  .trizen-login__backdrop { background:linear-gradient(rgba(9,9,11,.72),rgba(9,9,11,.86)), url('/trizen-photo.png') center / cover no-repeat; }
+  .trizen-login__intro { display:none; }
+  .trizen-login__card { border-radius:1.35rem; padding:1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trizen-login *, .trizen-login *::before, .trizen-login *::after { scroll-behavior:auto !important; transition:none !important; }
+}
