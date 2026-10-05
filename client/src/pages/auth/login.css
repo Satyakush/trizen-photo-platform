@@ -1,5 +1,6 @@
 .trizen-login{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(390px,.85fr);padding:0;background:#030712;color:#fff;overflow:hidden;isolation:isolate}
-.trizen-login__backdrop{position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(3,7,18,.12),rgba(3,7,18,.38) 52%,rgba(3,7,18,.82)),url("/trizen-photo.png") center/cover no-repeat}
+.trizen-login__backdrop{position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(3,7,18,.12),rgba(3,7,18,.38) 52%,rgba(3,7,18,.82)),none center/cover no-repeat}
+.trizen-login__backdrop::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);background-size:72px 72px;mask-image:linear-gradient(to bottom,black,transparent 88%)}
 .trizen-login__backdrop::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 24% 30%,rgba(255,255,255,.08),transparent 28%),linear-gradient(180deg,transparent 48%,rgba(3,7,18,.82))}
 .trizen-login__glow{position:absolute;width:28rem;height:28rem;border-radius:999px;background:rgba(255,255,255,.07);filter:blur(80px);right:22%;top:-15rem;z-index:-1}
 .trizen-login__layout{width:100%;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(390px,.85fr);grid-column:1/-1;align-items:center}
@@ -7,7 +8,7 @@
 .trizen-login__eyebrow{display:inline-flex;width:max-content;align-items:center;gap:.65rem;padding:.55rem .8rem;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.08);backdrop-filter:blur(14px);font-size:.72rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
 .trizen-login__mark{width:2rem;height:2rem;display:grid;place-items:center;border-radius:.65rem;background:#fff;color:#09090b}
 .trizen-login__intro h1{margin:1.5rem 0 0;max-width:680px;font-size:clamp(3rem,6vw,6rem);line-height:.92;letter-spacing:-.06em;font-weight:900}
-.trizen-login__intro p{max-width:560px;margin:1.5rem 0 0;color:rgba(255,255,255,.72);font-size:clamp(.95rem,1.5vw,1.15rem);line-height:1.7}
+.trizen-login__intro h1 em{font-style:normal;color:#22d3ee}.trizen-login__intro p{max-width:560px;margin:1.5rem 0 0;color:rgba(255,255,255,.72);font-size:clamp(.95rem,1.5vw,1.15rem);line-height:1.7}
 .trizen-login__card{width:min(calc(100% - 3rem),460px);justify-self:center;padding:clamp(1.35rem,3vw,2.1rem);border:1px solid rgba(148,163,184,.16);border-radius:1.4rem;background:rgba(15,23,42,.9);box-shadow:0 30px 90px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.04);backdrop-filter:blur(20px)}
 .trizen-login__brand{display:flex;align-items:center;gap:.8rem;margin-bottom:1.5rem}
 .trizen-login__brand-mark{width:2.7rem;height:2.7rem;display:grid;place-items:center;border-radius:.85rem;background:#fff;color:#09090b;font-weight:900}
