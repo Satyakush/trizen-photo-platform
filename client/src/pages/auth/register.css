@@ -18,3 +18,4 @@
 @media(max-width:430px){.trizen-register__card{width:calc(100% - 1.25rem);padding:1.25rem 1.15rem;border-radius:1.1rem}}
 @media(max-height:700px) and (min-width:901px){.trizen-register__intro{padding:1.5rem 3rem}.trizen-register__intro h1{font-size:clamp(2.5rem,4.5vw,4.2rem)}.trizen-register__card{padding:1.2rem 1.4rem}.trizen-register__form{gap:.5rem}}
 @media(prefers-reduced-motion:reduce){.trizen-register *{transition:none!important}}
+.trizen-register__password-toggle{width:2rem;height:2rem;display:grid;place-items:center;right:.35rem;bottom:.2rem;padding:.35rem;border-radius:.5rem}.trizen-register__password-toggle svg{width:1.05rem;height:1.05rem;display:block}.trizen-register__password-toggle:hover{background:rgba(34,211,238,.08)}
