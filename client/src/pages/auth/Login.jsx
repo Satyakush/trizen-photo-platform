@@ -37,8 +37,8 @@ const Login = () => {
 
   return (
     <main className="trizen-login">
-      <div className="trizen-login__backdrop" />
-      <div className="trizen-login__glow" />
+      <div className="trizen-login__backdrop" aria-hidden="true" />
+      <div className="trizen-login__glow" aria-hidden="true" />
 
       <div className="trizen-login__layout">
         <section className="trizen-login__intro">
@@ -46,8 +46,8 @@ const Login = () => {
             <span className="trizen-login__mark">T</span>
             Trizen Photos
           </div>
-          <h1>Your moments.<br />A bigger world.</h1>
-          <p>Sign in to manage galleries, coordinate photo events, and keep every memory organized in one professional workspace.</p>
+          <h1>Create beautifully.<br /><em>Manage effortlessly.</em></h1>
+          <p>One focused workspace for galleries, teams, events, and every frame that matters.</p>
         </section>
 
         <section className="trizen-login__card">
