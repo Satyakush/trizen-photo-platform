@@ -30,3 +30,5 @@
 .trizen-login__field>input:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.1);background:rgba(2,6,23,.72)}
 .trizen-login__field:has(.trizen-login__toggle)>input{padding-right:4rem}
 .trizen-login__toggle{position:absolute;right:.35rem;bottom:.2rem;top:auto;transform:none}
+
+.trizen-login__password-toggle{position:absolute;right:.35rem;bottom:.2rem;top:auto;transform:none;width:2rem;height:2rem;display:grid;place-items:center;border:0;border-radius:.5rem;background:transparent;color:#22d3ee;cursor:pointer;padding:.35rem}.trizen-login__password-toggle svg{width:1.05rem;height:1.05rem;display:block}.trizen-login__password-toggle:hover{background:rgba(34,211,238,.08)}
