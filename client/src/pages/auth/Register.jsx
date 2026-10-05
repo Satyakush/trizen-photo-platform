@@ -7,7 +7,7 @@ const Register = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name:"", email:"", password:"", setupKey:"" });
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);\n\n  const EyeIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="12" r="2.7" fill="none" stroke="currentColor" strokeWidth="1.8"/></svg>;\n  const EyeOffIcon = () => <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.2A10.7 10.7 0 0 1 12 6c6.1 0 9.5 6 9.5 6a17.8 17.8 0 0 1-3.1 3.7M6.2 6.8C3.8 8.3 2.5 12 2.5 12s3.4 6 9.5 6c1.3 0 2.5-.3 3.5-.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -51,7 +51,7 @@ const Register = () => {
           <label className="trizen-register__field"><span>Full name</span><input name="name" value={form.name} onChange={handleChange} required minLength={2} maxLength={50} autoComplete="name" placeholder="Your name" /></label>
           <label className="trizen-register__field"><span>Email address</span><input type="email" name="email" value={form.email} onChange={handleChange} required autoComplete="email" placeholder="you@example.com" /></label>
           <label className="trizen-register__field"><span>Password</span><input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required minLength={6} autoComplete="new-password" placeholder="At least 6 characters" />
-          <button type="button" className="trizen-register__password-toggle" onClick={() => setShowPassword((value) => !value)}>{showPassword ? "Hide" : "Show"}</button></label>
+          <button type="button" className="trizen-register__password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOffIcon /> : <EyeIcon />}</button></label>
           <label className="trizen-register__field"><span>Admin setup key</span><input type="password" name="setupKey" value={form.setupKey} onChange={handleChange} required autoComplete="off" placeholder="Enter setup key" /></label>
           <button type="submit" disabled={loading} className="trizen-register__submit">{loading ? "Creating account..." : "Create admin account →"}</button>
         </form>
