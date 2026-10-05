@@ -12,6 +12,7 @@ const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (event) => {
@@ -71,7 +72,8 @@ const Login = () => {
             <label className="trizen-login__field">
               <span>Password</span>
               <div className="trizen-login__control">
-                <input type="password" name="password" value={form.password} onChange={handleChange} required autoComplete="current-password" placeholder="••••••••" />
+                <input className="has-toggle" type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required autoComplete="current-password" placeholder="••••••••" />
+                <button type="button" className="trizen-login__toggle" onClick={() => setShowPassword((value) => !value)}>{showPassword ? "Hide" : "Show"}</button>
               </div>
             </label>
 
