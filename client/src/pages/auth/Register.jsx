@@ -34,8 +34,8 @@ const Register = () => {
     <main className="trizen-register">
       <section className="trizen-register__intro">
         <div className="trizen-register__eyebrow"><span className="trizen-register__mark">T</span> Trizen Photos</div>
-        <h1>Build the team behind every frame.</h1>
-        <p>Create an authorized admin account to manage events, photographers, galleries, and the complete photo workflow.</p>
+        <h1>Build the workflow behind every frame.</h1>
+        <p>A focused command center for events, photographers, galleries, and the complete photo workflow.</p>
         <div className="trizen-register__features">
           {["Create events","Assign your team","Publish galleries"].map((item,i) => (
             <div className="trizen-register__feature" key={item}><span>0{i+1}</span><strong>{item}</strong></div>
