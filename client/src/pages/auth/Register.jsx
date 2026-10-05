@@ -7,6 +7,7 @@ const Register = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name:"", email:"", password:"", setupKey:"" });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -49,7 +50,8 @@ const Register = () => {
         <form onSubmit={handleSubmit} className="trizen-register__form">
           <label className="trizen-register__field"><span>Full name</span><input name="name" value={form.name} onChange={handleChange} required minLength={2} maxLength={50} autoComplete="name" placeholder="Your name" /></label>
           <label className="trizen-register__field"><span>Email address</span><input type="email" name="email" value={form.email} onChange={handleChange} required autoComplete="email" placeholder="you@example.com" /></label>
-          <label className="trizen-register__field"><span>Password</span><input type="password" name="password" value={form.password} onChange={handleChange} required minLength={6} autoComplete="new-password" placeholder="At least 6 characters" /></label>
+          <label className="trizen-register__field"><span>Password</span><input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required minLength={6} autoComplete="new-password" placeholder="At least 6 characters" />
+          <button type="button" className="trizen-register__password-toggle" onClick={() => setShowPassword((value) => !value)}>{showPassword ? "Hide" : "Show"}</button></label>
           <label className="trizen-register__field"><span>Admin setup key</span><input type="password" name="setupKey" value={form.setupKey} onChange={handleChange} required autoComplete="off" placeholder="Enter setup key" /></label>
           <button type="submit" disabled={loading} className="trizen-register__submit">{loading ? "Creating account..." : "Create admin account →"}</button>
         </form>
