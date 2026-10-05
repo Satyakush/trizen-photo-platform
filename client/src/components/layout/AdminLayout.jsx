@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
 
 import { useAuth } from "../../context/AuthContext";
 
 const AdminLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
@@ -45,6 +47,7 @@ const AdminLayout = ({ children }) => {
             </nav>
           </div>
 
+          <button type="button" onClick={() => setMenuOpen(v => !v)} aria-label={menuOpen ? "Close navigation" : "Open navigation"} aria-expanded={menuOpen} className="flex h-10 w-10 items-center justify-center rounded-lg border text-gray-700 md:hidden">{menuOpen ? "×" : "☰"}</button>
           <div className="flex items-center gap-4">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-gray-900">
@@ -64,6 +67,7 @@ const AdminLayout = ({ children }) => {
             </button>
           </div>
         </div>
+        {menuOpen && <div className="border-t bg-white px-4 py-3 md:hidden"><nav className="grid gap-1"><Link to="/admin" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100">Events</Link><Link to="/admin/team-members" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100">Team Members</Link></nav></div>}
       </header>
 
       <main className="mx-auto max-w-7xl px-6 py-8">
