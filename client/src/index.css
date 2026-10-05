@@ -21,3 +21,24 @@ body {
   margin: 0;
   min-width: 320px;
 }
+
+/* Responsive application baseline */
+html,body,#root{max-width:100%;overflow-x:clip}
+img,video,canvas{max-width:100%;height:auto}
+svg{max-width:100%}
+pre{max-width:100%;overflow-x:auto}
+table{max-width:100%}
+@media(max-width:1024px){
+  .grid[class~="grid-cols-4"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid[class~="grid-cols-3"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:767px){
+  .grid[class~="grid-cols-4"],.grid[class~="grid-cols-3"],.grid[class~="grid-cols-2"]{grid-template-columns:minmax(0,1fr)!important}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+  main{max-width:100%;overflow-x:clip}
+  [class*="max-w-7xl"]{max-width:100%}
+}
+@media(max-width:480px){
+  button,a{min-height:42px}
+  input,select,textarea{max-width:100%}
+}
