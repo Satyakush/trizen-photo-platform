@@ -1,5 +1,4 @@
 .trizen-login{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(390px,.85fr);padding:0;background:#030712;color:#fff;overflow:hidden;isolation:isolate}
-.trizen-login__backdrop{position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(3,7,18,.12),rgba(3,7,18,.38) 52%,rgba(3,7,18,.82)),none center/cover no-repeat}
 .trizen-login__backdrop::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);background-size:72px 72px;mask-image:linear-gradient(to bottom,black,transparent 88%)}
 .trizen-login__backdrop::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 24% 30%,rgba(255,255,255,.08),transparent 28%),linear-gradient(180deg,transparent 48%,rgba(3,7,18,.82))}
 .trizen-login__glow{position:absolute;width:28rem;height:28rem;border-radius:999px;background:rgba(255,255,255,.07);filter:blur(80px);right:22%;top:-15rem;z-index:-1}
